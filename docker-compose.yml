@@ -23,6 +23,43 @@ services:
     volumes:
       - redis_data:/data
 
+  api:
+    build:
+      context: ./apps/api
+    container_name: neuralops_api
+    restart: always
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://postgres:password@db:5432/neuralops
+      - REDIS_URL=redis://redis:6379/0
+      - SECRET_KEY=super-secret-neuralops-key
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+      - redis
+
+  web:
+    build:
+      context: .
+      dockerfile: ./apps/web/Dockerfile
+    container_name: neuralops_web
+    restart: always
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+
+  nginx:
+    image: nginx:alpine
+    container_name: neuralops_nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./infrastructure/nginx.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - web
+      - api
+
 volumes:
   db_data:
   redis_data:
